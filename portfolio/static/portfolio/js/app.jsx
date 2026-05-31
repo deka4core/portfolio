@@ -40,23 +40,69 @@
 
   }
 
+  function timeAgo(isoString, lang) {
+    const diff = Math.floor((Date.now() - new Date(isoString)) / 1000);
+    if (diff < 3600)  return lang === "ru" ? `${Math.floor(diff/60)} мин назад`  : `${Math.floor(diff/60)}m ago`;
+    if (diff < 86400) return lang === "ru" ? `${Math.floor(diff/3600)} ч назад`  : `${Math.floor(diff/3600)}h ago`;
+    return lang === "ru" ? `${Math.floor(diff/86400)} дн назад` : `${Math.floor(diff/86400)}d ago`;
+  }
+
   function GitActivity({ colors, lang }) {
     const accent = colors.algo;
-    const latest = { repo: "graph-suite", ago: { ru: "2 ч назад", en: "2h ago" } };
-    const L = {
-      ru: { push: "push в", stats: (<span><b>24</b> репозитория · <b>183</b> звезды на github.com/deka4core</span>) },
-      en: { push: "pushed to", stats: (<span><b>24</b> repos · <b>183</b> stars on github.com/deka4core</span>) }
-    }[lang];
+    const [data, setData] = useState(null);
+    const [error, setError] = useState(false);
+
+    useEffect(() => {
+      fetch("/api/github/")
+        .then((r) => r.json())
+        .then((d) => setData(d))
+        .catch(() => setError(true));
+    }, []);
+
+    // пока грузится — заглушка
+    if (!data && !error) {
+      return (
+        <div className="gh-status" style={{ "--gh-accent": accent }}>
+          <div className="gh-status-line">
+            <span className="gh-live" />
+            <span style={{ opacity: 0.4 }}>{lang === "ru" ? "загрузка..." : "loading..."}</span>
+          </div>
+        </div>
+      );
+    }
+
+    // если API недоступен
+    if (error || data.error) {
+      return (
+        <div className="gh-status" style={{ "--gh-accent": accent }}>
+          <div className="gh-status-line">
+            <span className="gh-live" />
+            <a className="gh-repo" href="https://github.com/deka4core" target="_blank" rel="noreferrer">
+              github.com/deka4core
+            </a>
+          </div>
+        </div>
+      );
+    }
+
+    const push = lang === "ru" ? "push в" : "pushed to";
+    const ago = data.latest_ago ? timeAgo(data.latest_ago, lang) : "";
+    const reposLabel = lang === "ru" ? "репозитория" : "repos";
+    const stars = lang === "ru" ? "звезд" : "stars";
+
     return (
       <div className="gh-status" style={{ "--gh-accent": accent }}>
         <div className="gh-status-line">
           <span className="gh-live" />
-          {L.push} <span className="gh-repo">{latest.repo}</span>
-          <span className="gh-dot-sep">·</span> {tr(latest.ago, lang)}
+          {push} <span className="gh-repo">{data.latest_repo}</span>
+          <span className="gh-dot-sep">·</span> {ago}
         </div>
-        <div className="gh-status-stats">{L.stats}</div>
-      </div>);
+        <div className="gh-status-stats">
 
+          <span><b>{data.repos}</b> {reposLabel} · <b>{data.stars}</b> {stars} · github.com/deka4core</span>
+        </div>
+      </div>
+    );
   }
 
   function Intro({ data, colors, lang }) {
