@@ -88,7 +88,6 @@
     const push = lang === "ru" ? "push в" : "pushed to";
     const ago = data.latest_ago ? timeAgo(data.latest_ago, lang) : "";
     const reposLabel = lang === "ru" ? "репозитория" : "repos";
-    const stars = lang === "ru" ? "звезд" : "stars";
 
     return (
       <div className="gh-status" style={{ "--gh-accent": accent }}>
@@ -98,8 +97,7 @@
           <span className="gh-dot-sep">·</span> {ago}
         </div>
         <div className="gh-status-stats">
-
-          <span><b>{data.repos}</b> {reposLabel} · <b>{data.stars}</b> {stars} · github.com/deka4core</span>
+          <span><b>{data.repos}</b> {reposLabel} · github.com/deka4core</span>
         </div>
       </div>
     );

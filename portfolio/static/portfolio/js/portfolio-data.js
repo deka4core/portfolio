@@ -15,8 +15,8 @@ window.PORTFOLIO_DATA = {
     chips: ["Python", "C++", "SQL", "JS", "Linux", "Django", "Redis"],
     github: "github.com/deka4core",
     githubUrl: "https://github.com/deka4core",
-    telegram: "@dekacore",
-    telegramUrl: "https://t.me/dekacore",
+    telegram: "@deka4core",
+    telegramUrl: "https://t.me/deka4core",
     resumeUrl: "#",
   },
 

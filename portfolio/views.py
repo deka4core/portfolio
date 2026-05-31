@@ -6,13 +6,17 @@ from django.shortcuts import render
 from django.views.decorators.http import require_GET
 
 GITHUB_USER = "deka4core"
-REDIS_TTL = 600  # 10 минут
+REDIS_TTL = 600
 
 r = redis.Redis(host="localhost", port=6379, db=0, decode_responses=True)
 
 
 def index(request):
     return render(request, "portfolio/index.html")
+
+
+def admin_panel(request):
+    return render(request, "portfolio/admin.html")
 
 
 def _gh_get(url, token=None):
@@ -44,17 +48,14 @@ def github_activity(request):
         token = None
 
     try:
-        # профиль
         user = _gh_get(f"https://api.github.com/users/{GITHUB_USER}", token)
 
-        # звёзды — суммируем по всем репо
         repos = _gh_get(
             f"https://api.github.com/users/{GITHUB_USER}/repos?per_page=100&sort=updated",
             token,
         )
         stars = sum(repo.get("stargazers_count", 0) for repo in repos)
 
-        # события — берём PushEvent, не зависим от наличия commits в payload
         events = _gh_get(
             f"https://api.github.com/users/{GITHUB_USER}/events/public?per_page=30",
             token,
@@ -66,13 +67,10 @@ def github_activity(request):
             if event["type"] != "PushEvent":
                 continue
             repo_name = event["repo"]["name"].split("/")[-1]
-
-            # по одному событию на репо
             if repo_name in seen_repos:
                 continue
             seen_repos.add(repo_name)
 
-            # сообщение коммита если есть в payload
             msg = ""
             for c in event["payload"].get("commits", []):
                 m = c.get("message", "").split("\n")[0]
