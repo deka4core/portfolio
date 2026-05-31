@@ -13,6 +13,12 @@
       y: TOP_Y + si * GAP + yOff,
       st, si,
     }));
+    if (pts.length < 2) {
+      // single station — synthesize a dummy ext point above it
+      const first = pts[0];
+      const ext = { x: first.x, y: first.y - 175 };
+      return { meanX, pts, ext };
+    }
     const first = pts[0], second = pts[1];
     const ext = { x: first.x + (first.x - second.x) * 0.6, y: first.y - 175 };
     return { meanX, pts, ext };
@@ -58,7 +64,7 @@
     const { useState, useEffect } = React;
     const tr = (o) => (o && typeof o === "object" ? o[lang] : o);
     const yahText = data.ui.youAreHere[lang];
-    const lines = data.lines.map((ln, li) => ({ ln, li, ...lineLayout(ln, li, curve) }));
+    const lines = data.lines.filter((ln) => ln.stations && ln.stations.length > 0).map((ln, li) => ({ ln, li, ...lineLayout(ln, li, curve) }));
     // JS-driven reveal: target state is always visible, so it can never get stuck hidden.
     const [shown, setShown] = useState(!animate);
     useEffect(() => {

@@ -132,9 +132,37 @@
 
   }
 
+  // Merge DB data over static PORTFOLIO_DATA.
+  function mergePortfolioData(base, api) {
+    if (!api) return base;
+    const merged = { ...base };
+    if (api.lines && api.lines.length) {
+      const dbById = {};
+      api.lines.forEach((l) => { dbById[l.id] = l.stations; });
+      merged.lines = base.lines.map((line) => {
+        const dbStations = dbById[line.id];
+        // only replace if DB actually has stations for this line
+        return dbStations && dbStations.length > 0
+          ? { ...line, stations: dbStations }
+          : line;
+      });
+    }
+    if (api.repos) merged.repos = { ...base.repos, ...api.repos };
+    if (api.certItems) {
+      merged.certificates = {
+        ...base.certificates,
+        groups: base.certificates.groups.map((g) => {
+          const dbItems = api.certItems[g.id];
+          return dbItems && dbItems.length ? { ...g, items: dbItems } : g;
+        }),
+      };
+    }
+    return merged;
+  }
+
   function App() {
     const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
-    const data = window.PORTFOLIO_DATA;
+    const [data, setData] = useState(window.PORTFOLIO_DATA);
     const [tab, setTab] = useState("map");
     const [selected, setSelected] = useState(null);
     const [openId, setOpenId] = useState(null);
@@ -145,6 +173,17 @@
     });
     const prevTab = useRef("map");
     const detailsRef = useRef(null);
+
+    // load from DB and merge over static data
+    useEffect(() => {
+      fetch("/api/portfolio-data/")
+        .then((r) => r.json())
+        .then((apiData) => {
+          setData((base) => mergePortfolioData(base, apiData));
+          setMapNonce((n) => n + 1);
+        })
+        .catch(() => {});
+    }, []);
 
     useEffect(() => {
       try {localStorage.setItem("portfolio_lang", lang);} catch (e) {}

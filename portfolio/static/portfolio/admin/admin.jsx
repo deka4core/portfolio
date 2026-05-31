@@ -1,10 +1,8 @@
-// admin.jsx — back-office shell: login, tabs, state derived from PORTFOLIO_DATA,
-// and a single API stub layer to swap for the Django backend later.
+// admin.jsx — back-office shell with real Django REST API.
 (function () {
   const { useState, useEffect, useCallback } = React;
   const D = window.PORTFOLIO_DATA;
 
-  // Fixed line/group palette (matches the "muted/light" palette in app.jsx).
   const LINE_COLOR = { algo: "#8d76b5", db: "#6aa384", sys: "#c47a59" };
 
   const lineMeta = D.lines.map((l) => ({
@@ -14,77 +12,55 @@
     id: g.id, code: g.code, name: g.name.ru, color: LINE_COLOR[g.colorKey] || "#8d76b5"
   }));
 
-  // ---- derive flat working sets from the content model ----
-  function deriveProjects() {
-    const out = [];
-    D.lines.forEach((l) => l.stations.forEach((st) => {
-      const slug = D.repos[st.id];
-      out.push({
-        id: st.id,
-        lineId: l.id,
-        year: st.year,
-        status: st.status,
-        onMap: true, // everything currently on the map
-        name: { ...st.name },
-        desc: { ...st.desc },
-        stack: (st.stack || []).slice(),
-        repo: slug ? D.repoBase.replace(/^https?:\/\//, "") + slug : "",
-        media: (st.media || []).map((m) => ({ ...m }))
-      });
-    }));
-    return out;
-  }
-  function deriveCerts() {
-    const out = [];
-    D.certificates.groups.forEach((g) => g.items.forEach((it) => {
-      out.push({
-        id: it.id, groupId: g.id, year: it.year, img: it.img,
-        title: { ...it.title }, issuer: { ...it.issuer }, cred: { ...it.cred },
-        skills: (it.skills || []).slice()
-      });
-    }));
-    return out;
-  }
-
-  // ================= API STUB =================
-  // Replace each body with a fetch() to your Django REST endpoints.
-  // The shapes here map 1:1 to the Project / Certificate models you'll build.
-  // Auth: send the session cookie + CSRF token (e.g. headers: {'X-CSRFToken': ...}).
+  // ================= API =================
   const api = {
-    async login(username, password) {
-      // TODO: POST /admin/api/login  -> sets session cookie
-      await wait(450);
-      if (!username.trim() || !password.trim()) throw new Error("Введите логин и пароль");
-      return { user: username.trim() };
+    async getProjects() {
+      const r = await fetch("/api/projects/");
+      const data = await r.json();
+      return data.projects;
     },
     async saveProject(project) {
-      // TODO: project.id existing -> PUT /admin/api/projects/<id>/
-      //       new                -> POST /admin/api/projects/
-      // Media files: upload as multipart/form-data; the data URLs here become File uploads.
-      await wait(360);
-      console.log("[api.saveProject]", project);
-      return project;
+      const isNew = !!project._new;
+      const clean = { ...project }; delete clean._new;
+      const url = isNew ? "/api/projects/" : `/api/projects/${clean.id}/`;
+      const method = isNew ? "POST" : "PUT";
+      const r = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(clean),
+      });
+      if (!r.ok) throw new Error("Ошибка сохранения");
+      return await r.json();
     },
     async deleteProject(id) {
-      // TODO: DELETE /admin/api/projects/<id>/
-      await wait(280);
-      console.log("[api.deleteProject]", id);
+      const r = await fetch(`/api/projects/${id}/`, { method: "DELETE" });
+      if (!r.ok) throw new Error("Ошибка удаления");
       return true;
+    },
+    async getCerts() {
+      const r = await fetch("/api/certs/");
+      const data = await r.json();
+      return data.certs;
     },
     async saveCert(cert) {
-      // TODO: PUT/POST /admin/api/certificates/  (scan uploaded as multipart)
-      await wait(360);
-      console.log("[api.saveCert]", cert);
-      return cert;
+      const isNew = !!cert._new;
+      const clean = { ...cert }; delete clean._new;
+      const url = isNew ? "/api/certs/" : `/api/certs/${clean.id}/`;
+      const method = isNew ? "POST" : "PUT";
+      const r = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(clean),
+      });
+      if (!r.ok) throw new Error("Ошибка сохранения");
+      return await r.json();
     },
     async deleteCert(id) {
-      // TODO: DELETE /admin/api/certificates/<id>/
-      await wait(280);
-      console.log("[api.deleteCert]", id);
+      const r = await fetch(`/api/certs/${id}/`, { method: "DELETE" });
+      if (!r.ok) throw new Error("Ошибка удаления");
       return true;
-    }
+    },
   };
-  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
   // ================= LOGIN =================
   function Login({ onAuth }) {
@@ -95,14 +71,11 @@
 
     const submit = async (e) => {
       e.preventDefault();
-      setErr("");setBusy(true);
-      try {
-        const { user } = await api.login(u, p);
-        onAuth(user);
-      } catch (ex) {
-        setErr(ex.message || "Не удалось войти");
-        setBusy(false);
+      setErr(""); setBusy(true);
+      if (!u.trim() || !p.trim()) {
+        setErr("Введите логин и пароль"); setBusy(false); return;
       }
+      onAuth(u.trim());
     };
 
     return (
@@ -122,31 +95,30 @@
             <div className="field">
               <label className="field-label">Логин</label>
               <input className="inp" value={u} autoFocus autoComplete="username"
-              onChange={(e) => setU(e.target.value)} placeholder="admin" />
+                onChange={(e) => setU(e.target.value)} placeholder="admin" />
             </div>
             <div className="field">
               <label className="field-label">Пароль</label>
               <input className="inp" type="password" value={p} autoComplete="current-password"
-              onChange={(e) => setP(e.target.value)} placeholder="••••••••" />
+                onChange={(e) => setP(e.target.value)} placeholder="••••••••" />
             </div>
             <button className="btn-save" style={{ marginTop: 4 }} type="submit" disabled={busy}>
               {busy ? "Проверяем…" : "Войти"}
             </button>
           </form>
           <div className="login-hint">
-            Демо-прототип · вход — <b>любой логин и пароль</b>.<br />
-            На бэкенде это станет страницей Django <b>/admin</b> с реальной аутентификацией.
+            Демо-прототип · вход — <b>любой логин и пароль</b>.
           </div>
           <a className="login-back" href="/">‹ Вернуться к портфолио</a>
         </div>
-      </div>);
-
+      </div>
+    );
   }
 
   // ================= SHELL =================
   function Admin() {
     const [user, setUser] = useState(() => {
-      try {return sessionStorage.getItem("admin_user") || null;} catch (e) {return null;}
+      try { return sessionStorage.getItem("admin_user") || null; } catch (e) { return null; }
     });
     const [dark, setDark] = useState(() => {
       try {
@@ -156,13 +128,24 @@
       return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
     });
     const [tab, setTab] = useState("projects");
-    const [projects, setProjects] = useState(deriveProjects);
-    const [certs, setCerts] = useState(deriveCerts);
+    const [projects, setProjects] = useState([]);
+    const [certs, setCerts] = useState([]);
+    const [loading, setLoading] = useState(false);
     const [toast, setToast] = useState("");
 
     useEffect(() => {
-      try {localStorage.setItem("admin_dark", dark ? "1" : "0");} catch (e) {}
+      try { localStorage.setItem("admin_dark", dark ? "1" : "0"); } catch (e) {}
     }, [dark]);
+
+    // load data from API on login
+    useEffect(() => {
+      if (!user) return;
+      setLoading(true);
+      Promise.all([api.getProjects(), api.getCerts()])
+        .then(([projs, certs]) => { setProjects(projs); setCerts(certs); })
+        .catch(() => flash("Не удалось загрузить данные"))
+        .finally(() => setLoading(false));
+    }, [user]);
 
     const flash = useCallback((msg) => {
       setToast(msg);
@@ -171,55 +154,59 @@
     }, []);
 
     const authIn = (u) => {
-      try {sessionStorage.setItem("admin_user", u);} catch (e) {}
+      try { sessionStorage.setItem("admin_user", u); } catch (e) {}
       setUser(u);
     };
     const logout = () => {
-      try {sessionStorage.removeItem("admin_user");} catch (e) {}
+      try { sessionStorage.removeItem("admin_user"); } catch (e) {}
       setUser(null);
     };
 
     // ---- project handlers ----
     const saveProject = async (p) => {
-      const clean = { ...p };delete clean._new;
-      await api.saveProject(clean);
-      setProjects((list) => {
-        const i = list.findIndex((x) => x.id === clean.id);
-        if (i === -1) return [...list, clean];
-        const next = list.slice();next[i] = clean;return next;
-      });
-      flash(p._new ? "Проект создан" : "Проект сохранён");
+      try {
+        const saved = await api.saveProject(p);
+        setProjects((list) => {
+          const i = list.findIndex((x) => x.id === saved.id);
+          if (i === -1) return [...list, saved];
+          const next = list.slice(); next[i] = saved; return next;
+        });
+        flash(p._new ? "Проект создан" : "Проект сохранён");
+      } catch (e) { flash("Ошибка: " + e.message); }
     };
     const deleteProject = async (id) => {
-      await api.deleteProject(id);
-      setProjects((list) => list.filter((x) => x.id !== id));
-      flash("Проект удалён");
+      try {
+        await api.deleteProject(id);
+        setProjects((list) => list.filter((x) => x.id !== id));
+        flash("Проект удалён");
+      } catch (e) { flash("Ошибка удаления"); }
     };
 
     // ---- cert handlers ----
     const saveCert = async (c) => {
-      const clean = { ...c };delete clean._new;
-      await api.saveCert(clean);
-      setCerts((list) => {
-        const i = list.findIndex((x) => x.id === clean.id);
-        if (i === -1) return [...list, clean];
-        const next = list.slice();next[i] = clean;return next;
-      });
-      flash(c._new ? "Сертификат создан" : "Сертификат сохранён");
+      try {
+        const saved = await api.saveCert(c);
+        setCerts((list) => {
+          const i = list.findIndex((x) => x.id === saved.id);
+          if (i === -1) return [...list, saved];
+          const next = list.slice(); next[i] = saved; return next;
+        });
+        flash(c._new ? "Сертификат создан" : "Сертификат сохранён");
+      } catch (e) { flash("Ошибка: " + e.message); }
     };
     const deleteCert = async (id) => {
-      await api.deleteCert(id);
-      setCerts((list) => list.filter((x) => x.id !== id));
-      flash("Сертификат удалён");
+      try {
+        await api.deleteCert(id);
+        setCerts((list) => list.filter((x) => x.id !== id));
+        flash("Сертификат удалён");
+      } catch (e) { flash("Ошибка удаления"); }
     };
 
-    if (!user) {
-      return (
-        <div className={"aroot" + (dark ? " dark" : "")}>
-          <Login onAuth={authIn} />
-        </div>);
-
-    }
+    if (!user) return (
+      <div className={"aroot" + (dark ? " dark" : "")}>
+        <Login onAuth={authIn} />
+      </div>
+    );
 
     return (
       <div className={"aroot" + (dark ? " dark" : "")}>
@@ -229,10 +216,9 @@
               <div className="atop-roundel">TZ</div>
               <div className="atop-titles">
                 <span className="atop-title">Админка портфолио</span>
-                <span className="atop-sub"></span>
+                <span className="atop-sub">{loading ? "загрузка…" : ""}</span>
               </div>
             </div>
-
             <nav className="anav">
               <button className={"anav-tab" + (tab === "projects" ? " on" : "")} onClick={() => setTab("projects")}>
                 Проекты <span className="anav-count">{projects.length}</span>
@@ -241,7 +227,6 @@
                 Сертификаты <span className="anav-count">{certs.length}</span>
               </button>
             </nav>
-
             <div className="atop-spacer" />
             <button className="icon-btn" onClick={() => setDark((d) => !d)} aria-label="Тема">{dark ? "☀" : "☾"}</button>
             <a className="icon-btn" href="/" aria-label="К сайту" title="Открыть портфолио" style={{ textDecoration: "none" }}>↗</a>
@@ -249,20 +234,9 @@
           </header>
 
           <main className="amain">
-            {tab === "projects" ?
-            <ProjectsPanel
-              projects={projects}
-              lineMeta={lineMeta}
-              onSave={saveProject}
-              onDelete={deleteProject} /> :
-
-
-            <CertsPanel
-              certs={certs}
-              groupMeta={groupMeta}
-              onSave={saveCert}
-              onDelete={deleteCert} />
-
+            {tab === "projects"
+              ? <ProjectsPanel projects={projects} lineMeta={lineMeta} onSave={saveProject} onDelete={deleteProject} />
+              : <CertsPanel certs={certs} groupMeta={groupMeta} onSave={saveCert} onDelete={deleteCert} />
             }
           </main>
         </div>
@@ -270,8 +244,8 @@
         <div className={"toast" + (toast ? " show" : "")}>
           <span className="tcheck">✓</span>{toast}
         </div>
-      </div>);
-
+      </div>
+    );
   }
 
   ReactDOM.createRoot(document.getElementById("root")).render(<Admin />);
