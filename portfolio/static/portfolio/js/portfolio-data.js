@@ -74,8 +74,8 @@ window.PORTFOLIO_DATA = {
     {
       id: "algo",
       code: "A",
-      name:   { ru: "Алгоритмы", en: "Algorithms" },
-      domain: { ru: "Алгоритмы · Python", en: "Algorithms · Python" },
+      name:   { ru: "Приложения", en: "Applications" },
+      domain: { ru: "Приложения", en: "Applications" },
       stations: [
         { id: "a-ml", year: "2026", status: "future", stack: ["Python", "NumPy"],
           name: { ru: "ML с нуля", en: "ML From Scratch" },
@@ -102,8 +102,8 @@ window.PORTFOLIO_DATA = {
     {
       id: "db",
       code: "D",
-      name:   { ru: "Базы данных", en: "Databases" },
-      domain: { ru: "Базы данных · SQL", en: "Databases · SQL" },
+      name:   { ru: "Данные и веб", en: "Data & Web" },
+      domain: { ru: "Данные и веб", en: "Data & Web" },
       stations: [
         { id: "d-cache", year: "2026", status: "future", stack: ["Redis", "Python"],
           name: { ru: "Распределённый кэш", en: "Distributed Cache" },
@@ -130,8 +130,8 @@ window.PORTFOLIO_DATA = {
     {
       id: "sys",
       code: "S",
-      name:   { ru: "Системы", en: "Systems" },
-      domain: { ru: "Системы · C++", en: "Systems · C++" },
+      name:   { ru: "Учёба и инструменты", en: "Study & Tools" },
+      domain: { ru: "Учёба и инструменты", en: "Study & Tools" },
       stations: [
         { id: "s-alloc", year: "2026", status: "future", stack: ["C++"],
           name: { ru: "Свой аллокатор", en: "Custom Allocator" },
