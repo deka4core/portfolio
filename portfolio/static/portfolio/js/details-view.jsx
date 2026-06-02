@@ -146,7 +146,7 @@
                 </div>
 
                 <div className="card-stack">
-                  {ln.stations.map((st) => {
+                  {(ln.stations || []).slice().sort((a, b) => (b.year || '0').localeCompare(a.year || '0')).map((st) => {
                     const on = selected === st.id;
                     const repoUrl = repoUrlFor(data, st.id);
                     return (

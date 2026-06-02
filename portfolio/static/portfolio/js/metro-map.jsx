@@ -64,7 +64,14 @@
     const { useState, useEffect } = React;
     const tr = (o) => (o && typeof o === "object" ? o[lang] : o);
     const yahText = data.ui.youAreHere[lang];
-    const lines = data.lines.filter((ln) => ln.stations && ln.stations.length > 0).map((ln, li) => ({ ln, li, ...lineLayout(ln, li, curve) }));
+    const lines = data.lines
+      .map((ln) => ({
+        ...ln,
+        // newest at top (highest year first), then by original order
+        stations: (ln.stations || []).slice().sort((a, b) => (b.year || "0").localeCompare(a.year || "0")),
+      }))
+      .filter((ln) => ln.stations.length > 0)
+      .map((ln, li) => ({ ln, li, ...lineLayout(ln, li, curve) }));
     // JS-driven reveal: target state is always visible, so it can never get stuck hidden.
     const [shown, setShown] = useState(!animate);
     useEffect(() => {
