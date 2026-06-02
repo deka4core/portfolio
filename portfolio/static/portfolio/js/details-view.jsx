@@ -146,7 +146,12 @@
                 </div>
 
                 <div className="card-stack">
-                  {(ln.stations || []).slice().sort((a, b) => (b.year || '0').localeCompare(a.year || '0')).map((st) => {
+                  {(ln.stations || []).length === 0 ? (
+                    <div className="aempty" style={{ padding: "2rem 1rem", color: "var(--ink-faint)", fontSize: 13, textAlign: "center" }}>
+                      <div style={{ fontSize: 22, marginBottom: 8, opacity: 0.3 }}>◇</div>
+                      {lang === "ru" ? "Проекты появятся здесь" : "Projects will appear here"}
+                    </div>
+                  ) : (ln.stations || []).slice().sort((a, b) => (b.year || '0').localeCompare(a.year || '0')).map((st) => {
                     const on = selected === st.id;
                     const repoUrl = repoUrlFor(data, st.id);
                     return (

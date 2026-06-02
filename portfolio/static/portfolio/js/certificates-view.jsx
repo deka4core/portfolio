@@ -26,6 +26,29 @@
     );
   }
 
+  function EmptyGroup({ code, color, lang, ui }) {
+    const tr = (o) => (o && typeof o === "object" ? o[lang] : o);
+    const sub = (ui.emptyHints && ui.emptyHints[code.id]) || ui.emptyDefault;
+    return (
+      <div className="cert-empty">
+        <span className="ce-frame" />
+        <div className="ce-art" style={{ color }}>
+          <span className="ce-seg" />
+          <span className="ce-mini" />
+          <span className="ce-seg" />
+          <span className="ce-roundel">{code.label}</span>
+          <span className="ce-seg" />
+          <span className="ce-mini" />
+          <span className="ce-seg" />
+        </div>
+        <div className="ce-text">
+          <div className="ce-title">{tr(ui.emptyTitle)}</div>
+          <div className="ce-sub">{tr(sub)}</div>
+        </div>
+      </div>
+    );
+  }
+
   function CertificatesView({ data, colors, lang }) {
     const tr = (o) => (o && typeof o === "object" ? o[lang] : o);
     const ui = data.ui;
@@ -60,7 +83,9 @@
               </div>
 
               <div className="cert-grid">
-                {g.items.map((item) => {
+                {g.items.length === 0 ? (
+                  <EmptyGroup code={{ id: g.id, label: g.code }} color={color} lang={lang} ui={ui} />
+                ) : g.items.map((item) => {
                   const issuer = tr(item.issuer);
                   return (
                     <article

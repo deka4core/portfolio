@@ -219,6 +219,32 @@ body {
 .cert-count { font-family: var(--mono); font-size: 11.5px; font-weight: 600; color: var(--ink-faint); background: var(--chip-bg); border-radius: 999px; padding: 5px 12px; flex: none; }
 .cert-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(265px, 1fr)); gap: 20px; }
 
+/* empty group — borrows the map's "planned station" language */
+.cert-empty {
+  grid-column: 1 / -1; position: relative;
+  display: flex; flex-direction: column; align-items: center; gap: 20px;
+  padding: 52px 28px 50px; text-align: center;
+  background: var(--surface); border: 1px solid var(--line-hair); border-radius: 14px; overflow: hidden;
+}
+.ce-frame { position: absolute; inset: 13px; border: 1.5px dashed var(--line-hair); border-radius: 10px; pointer-events: none; }
+.ce-art { display: flex; align-items: center; gap: 9px; }
+.ce-seg { width: 30px; height: 0; border-top: 3px dashed currentColor; opacity: .45; }
+.ce-mini { width: 13px; height: 13px; border-radius: 50%; border: 2.4px dashed currentColor; background: var(--surface); opacity: .55; flex: none; }
+.ce-roundel {
+  position: relative; width: 62px; height: 62px; border-radius: 50%; flex: none;
+  border: 2.6px dashed currentColor; background: var(--surface);
+  display: grid; place-items: center; font-family: var(--mono); font-weight: 700; font-size: 25px;
+}
+.ce-roundel::after {
+  content: ""; position: absolute; inset: -8px; border-radius: 50%;
+  border: 2px solid currentColor; opacity: 0; animation: cePulse 2.9s ease-out infinite;
+}
+@keyframes cePulse { 0% { transform: scale(.72); opacity: .5; } 70% { opacity: 0; } 100% { transform: scale(1.5); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .ce-roundel::after { animation: none; } }
+.ce-text { display: flex; flex-direction: column; gap: 6px; max-width: 34ch; }
+.ce-title { font-size: 16.5px; font-weight: 600; letter-spacing: -0.01em; color: var(--ink); }
+.ce-sub { font-family: var(--mono); font-size: 11.5px; letter-spacing: .04em; color: var(--ink-faint); text-wrap: pretty; }
+
 .ccard {
   position: relative; display: flex; flex-direction: column;
   background: var(--surface); border: 1px solid var(--line-hair); border-radius: 14px;
@@ -331,3 +357,28 @@ body {
   .map-wrap { position: relative; width: 100%; height: 78vh; padding: 8px 8px 24px; -webkit-mask-image: none; mask-image: none; }
   .details-grid { grid-template-columns: 1fr; gap: 30px; }
 }
+
+/* ── track empty state ── */
+.track-empty {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 20px 18px;
+  border-radius: var(--radius-md, 10px);
+  background: var(--bg-2, #f5f5f7);
+  margin-bottom: 8px;
+}
+.dark .track-empty {
+  background: var(--bg-2-dk, #1e2025);
+}
+.te-line {
+  width: 3px;
+  height: 40px;
+  border-radius: 99px;
+  flex-shrink: 0;
+  opacity: 0.5;
+}
+.te-body { display: flex; flex-direction: column; gap: 3px; }
+.te-title { font-size: 13px; font-weight: 500; color: var(--ink, #1a1a1e); }
+.te-sub   { font-size: 12px; color: var(--ink-faint, #9999a8); }
+.dark .te-title { color: var(--ink-dk, #e8e8f0); }
